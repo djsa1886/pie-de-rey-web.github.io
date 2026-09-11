@@ -209,6 +209,11 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
   .wrap{padding:16px 12px 44px}
   /* La fila de apreciacion mide ~430px: sin envolver, empuja el ancho de la pagina
      en el telefono. Los grupos de control pasan a ocupar una linea completa. */
+  /* Las 4 pestanas suman 416px y la pantalla da 351: la barra quedaba desplazable,
+     siempre habia una pestana recortada y al tocarla la barra se movia bajo el dedo
+     en lugar de seleccionar. En pantalla estrecha se reparten en dos filas. */
+  .tabs{flex-wrap:wrap; overflow-x:visible}
+  .tab{flex:1 1 calc(50% - 3px); white-space:normal; min-height:44px; padding:9px 8px; font-size:13.5px}
   .controls{gap:12px}
   .controls>*{flex:1 1 100%}
   .seg{flex-wrap:wrap}
@@ -371,7 +376,8 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
     </div>
 
     <div class="stage">
-      <div class="stage-head"><span class="stage-title">Instrumento · lectura oculta</span></div>
+      <div class="stage-head"><span class="stage-title">Instrumento · lectura oculta</span>
+        <span class="note" style="font-size:12px">Fijo: aquí no se arrastra, se lee</span></div>
       <div class="scroller"><svg id="prCalSvg" viewBox="0 0 1120 300" role="img" aria-label="Pie de rey con una medida por leer"></svg></div>
     </div>
     <div class="stage">
@@ -394,6 +400,7 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
   <footer>
     <span>Universidad UTE · Facultad de Ciencias de la Ingeniería e Industrias · Carrera de Electromecánica</span>
     <span>Simulador de apoyo docente. No sustituye la calibración del instrumento real.</span>
+    <span id="ver">v4 · 11-09-2026</span>
   </footer>
 </div>
 
