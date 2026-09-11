@@ -126,6 +126,10 @@ input[type="range"]{width:100%; accent-color:var(--accent); height:26px; margin:
 .scroller svg{display:block; min-width:780px; width:100%; height:auto}
 .scroller svg.grab{touch-action:none; cursor:ew-resize}
 .scroller svg.zoom{min-width:620px}
+/* Un item de flex/grid no se encoge por debajo de su contenido salvo min-width:0.
+   Sin esto, el SVG de 780px del calibrador empuja el ancho de TODA la pagina y el
+   telefono queda con scroll horizontal, en vez de desplazarse solo dentro de .scroller. */
+.panel, .panel>*, .stage, .card, .scroller, .readout>*, .cols>*, .grid4>*, .steps li>*{min-width:0}
 .hint{font-size:12.5px; color:var(--ink-2); padding:9px 14px; border-top:1px solid var(--line); background:var(--surface-2); margin:0}
 
 .pieces{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:10px}
@@ -203,7 +207,16 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
   .readout{grid-template-columns:1fr; gap:12px}
   .card-pad{padding:15px}
   .wrap{padding:16px 12px 44px}
+  /* La fila de apreciacion mide ~430px: sin envolver, empuja el ancho de la pagina
+     en el telefono. Los grupos de control pasan a ocupar una linea completa. */
+  .controls{gap:12px}
+  .controls>*{flex:1 1 100%}
+  .seg{flex-wrap:wrap}
+  .seg button{flex:1 1 auto}
+  .stepper{flex-wrap:wrap}
 }
+.only-narrow{display:none}
+@media (max-width:640px){ .only-narrow{display:block} }
 @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 </style>
 
@@ -364,6 +377,7 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
     <div class="stage">
       <div class="stage-head"><span class="stage-title">Lupa</span></div>
       <div class="scroller"><svg id="prZoomSvg" class="zoom" viewBox="0 0 1000 220" role="img" aria-label="Ampliación de la zona de lectura"></svg></div>
+      <p class="hint only-narrow">Desliza la lupa con el dedo para recorrer todo el nonio: la división que coincide puede estar a la derecha.</p>
     </div>
 
     <div class="card card-pad">
@@ -601,6 +615,28 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
 
   function moveCursor(g, reading){ if(g) g.setAttribute("transform", "translate(" + (X0 + reading*K) + ",0)"); }
 
+  /* En el telefono la tarjeta muestra una ventana mas estrecha que el dibujo: sin esto,
+     el cursor o la coincidencia del nonio quedan fuera de vista y la practica parece rota. */
+  var dragging = false;
+  function ensureVisible(svg, xVB, vbW, center, smooth){
+    if(!svg) return;
+    var sc = svg.parentElement;
+    if(!sc || sc.scrollWidth <= sc.clientWidth + 1) return;   // en escritorio cabe entero: no hace nada
+    var x = xVB * (svg.getBoundingClientRect().width / vbW), margin = 48, target;
+    if(center){
+      target = x - sc.clientWidth/2;
+    } else if(x < sc.scrollLeft + margin){
+      target = x - margin;
+    } else if(x > sc.scrollLeft + sc.clientWidth - margin){
+      target = x - sc.clientWidth + margin;
+    } else return;
+    target = Math.max(0, Math.min(sc.scrollWidth - sc.clientWidth, target));
+    if(smooth && sc.scrollTo) sc.scrollTo({left:target, behavior:"smooth"});
+    else sc.scrollLeft = target;
+  }
+  function zoomCoincX(k){ return 30 + k*vdiv()*(960/(vlen() + 1.5)); }
+  function calCursorX(reading){ return X0 + reading*K; }
+
   function rebuild(){
     curG = buildCaliper(calSvg, "cal", false);
     prCurG = buildCaliper(prCalSvg, "prc", false);
@@ -633,6 +669,11 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
       "El cero del nonio ha rebasado la división de " + p.whole + " mm. La división " + p.k +
       " del nonio coincide con una de la regla: " + p.k + " × " + fmt(M().p) + " mm = " + fmt(p.frac) +
       " mm. Lectura = " + p.whole + " mm + " + fmt(p.frac) + " mm = " + fmt(v) + " mm.";
+
+    if(!dragging){
+      ensureVisible(calSvg, calCursorX(v), 1120, false, false);
+      ensureVisible(zoomSvg, zoomCoincX(p.k), 1000, false, false);
+    }
 
     renderNonio(p);
     renderVerdict();
@@ -757,21 +798,21 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
       var r = svg.getBoundingClientRect();
       return ((e.clientX - r.left)/r.width*1120 - X0)/K;
     }
-    svg.addEventListener("pointerdown", function(e){ on = true; svg.setPointerCapture(e.pointerId); setReading(pos(e)); e.preventDefault(); });
+    svg.addEventListener("pointerdown", function(e){ on = true; dragging = true; svg.setPointerCapture(e.pointerId); setReading(pos(e)); e.preventDefault(); });
     svg.addEventListener("pointermove", function(e){ if(on) setReading(pos(e)); });
-    svg.addEventListener("pointerup", function(){ on = false; });
-    svg.addEventListener("pointercancel", function(){ on = false; });
+    svg.addEventListener("pointerup", function(){ on = false; dragging = false; });
+    svg.addEventListener("pointercancel", function(){ on = false; dragging = false; });
   }
   function dragZoom(svg){
     var on = false, sx = 0, sr = 0;
-    svg.addEventListener("pointerdown", function(e){ on = true; svg.setPointerCapture(e.pointerId); sx = e.clientX; sr = state.reading; e.preventDefault(); });
+    svg.addEventListener("pointerdown", function(e){ on = true; dragging = true; svg.setPointerCapture(e.pointerId); sx = e.clientX; sr = state.reading; e.preventDefault(); });
     svg.addEventListener("pointermove", function(e){
       if(!on) return;
       var r = svg.getBoundingClientRect();
       setReading(sr + (e.clientX - sx)/r.width*(vlen() + 1.5));
     });
-    svg.addEventListener("pointerup", function(){ on = false; });
-    svg.addEventListener("pointercancel", function(){ on = false; });
+    svg.addEventListener("pointerup", function(){ on = false; dragging = false; });
+    svg.addEventListener("pointercancel", function(){ on = false; dragging = false; });
   }
   dragCaliper(calSvg);
   dragZoom(zoomSvg);
@@ -802,6 +843,11 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
         x.setAttribute("aria-selected", on ? "true" : "false");
         document.getElementById(x.getAttribute("aria-controls")).hidden = !on;
       });
+      // mientras el panel estaba oculto su ancho era 0 y no se pudo desplazar
+      var p = parts(state.reading);
+      ensureVisible(calSvg, calCursorX(state.reading), 1120, false, false);
+      ensureVisible(zoomSvg, zoomCoincX(p.k), 1000, false, false);
+      ensureVisible(prCalSvg, calCursorX(pr.target), 1120, true, false);
     });
   });
 
@@ -817,6 +863,8 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
     pr.answered = false;
     moveCursor(prCurG, pr.target);
     drawZoom(prZoomSvg, pr.target, false);
+    ensureVisible(prCalSvg, calCursorX(pr.target), 1120, true, false);
+    if(prZoomSvg.parentElement) prZoomSvg.parentElement.scrollLeft = 0;
     document.getElementById("prFeedback").className = "feedback";
     document.getElementById("prInput").value = "";
     document.getElementById("prMode").textContent =
@@ -843,6 +891,7 @@ footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; col
       p.k + " × " + fmt(M().p) + " = " + fmt(p.frac) + " mm</b>." +
       (ok ? " Pulsa «Otra medida» para seguir." : " Mira la lupa: la línea verde marca la coincidencia.");
     drawZoom(prZoomSvg, pr.target, true);
+    ensureVisible(prZoomSvg, zoomCoincX(p.k), 1000, true, true);
     document.getElementById("scHit").textContent = pr.hits;
     document.getElementById("scTry").textContent = pr.tries;
     document.getElementById("scStreak").textContent = pr.streak;
