@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Simulador interactivo de pie de rey (calibrador Vernier) con nonio de 0,1 / 0,05 / 0,02 mm. Universidad UTE.">
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; }
+  body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #fafaf9; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<title>Pie de Rey Virtual</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans+Condensed:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+:root{
+  --bg:#E9ECF1; --surface:#FFFFFF; --surface-2:#F2F5F9; --surface-3:#E3E8EF;
+  --line:#D2D8E2; --line-2:#B4BECC;
+  --ink:#141922; --ink-2:#47515F; --ink-3:#788494;
+  --accent:#0B34EE; --accent-soft:#E2E8FF;
+  --good:#2E7D12; --good-soft:#E8F4DF;
+  --warn:#9A6400; --warn-soft:#FBF0DA;
+  --bad:#BC2828; --bad-soft:#FAE6E6;
+  --lime-ink:#2E7D12;
+  --shadow:0 1px 2px rgba(20,25,34,.05), 0 10px 30px -18px rgba(20,25,34,.45);
+  --focus:#0B34EE;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1116; --surface:#171B22; --surface-2:#1E232C; --surface-3:#262C37;
+    --line:#2B323D; --line-2:#3E4854;
+    --ink:#E8ECF2; --ink-2:#A8B2C0; --ink-3:#78838F;
+    --accent:#7C9BFF; --accent-soft:#1A2340;
+    --good:#7BC85A; --good-soft:#182619;
+    --warn:#D9A54B; --warn-soft:#2A2113;
+    --bad:#F07A7A; --bad-soft:#2C1818;
+    --lime-ink:#9BE870;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+    --focus:#7C9BFF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1116; --surface:#171B22; --surface-2:#1E232C; --surface-3:#262C37;
+  --line:#2B323D; --line-2:#3E4854;
+  --ink:#E8ECF2; --ink-2:#A8B2C0; --ink-3:#78838F;
+  --accent:#7C9BFF; --accent-soft:#1A2340;
+  --good:#7BC85A; --good-soft:#182619;
+  --warn:#D9A54B; --warn-soft:#2A2113;
+  --bad:#F07A7A; --bad-soft:#2C1818;
+  --lime-ink:#9BE870;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.9);
+  --focus:#7C9BFF;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1140px; margin:0 auto; padding:22px 18px 56px; display:flex; flex-direction:column; gap:20px}
+
+.eyebrow{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:11.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0}
+h1{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700; font-size:clamp(1.9rem,5vw,2.7rem);
+  line-height:1.04; margin:6px 0 0; letter-spacing:-.01em; text-wrap:balance}
+h1 .sub{display:block; font-weight:500; font-size:.44em; letter-spacing:.02em; color:var(--accent); margin-top:8px}
+.lede{margin:10px 0 0; max-width:64ch; color:var(--ink-2)}
+
+.tabs{display:flex; gap:2px; background:var(--surface-3); padding:4px; border-radius:10px; overflow-x:auto; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 1 auto; white-space:nowrap; border:0; cursor:pointer; border-radius:7px; padding:9px 14px;
+  background:transparent; color:var(--ink-2); font-family:"IBM Plex Sans Condensed",sans-serif;
+  font-weight:600; font-size:14.5px; letter-spacing:.02em}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+.tab:focus-visible, button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+
+.panel{display:flex; flex-direction:column; gap:18px}
+.panel[hidden]{display:none}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+h2{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:700; font-size:1.25rem; margin:0 0 4px; letter-spacing:-.005em}
+h3{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:1.02rem; margin:0 0 4px}
+p{margin:0 0 10px} p:last-child{margin-bottom:0}
+.note{font-size:13.5px; color:var(--ink-2)}
+
+.controls{display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between;
+  padding:12px 14px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px}
+.seg{display:flex; gap:3px; background:var(--surface-3); border-radius:8px; padding:3px}
+.seg button{border:0; background:transparent; cursor:pointer; border-radius:6px; padding:7px 11px;
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:500; color:var(--ink-2); white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+.ctl-label{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:11.5px;
+  letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:5px}
+.stepper{display:flex; gap:6px}
+.stepper button{width:40px; height:36px; border-radius:8px; border:1px solid var(--line-2); background:var(--surface);
+  color:var(--ink); cursor:pointer; font-family:"IBM Plex Mono",monospace; font-size:13px; line-height:1}
+.stepper button:hover{border-color:var(--accent); color:var(--accent)}
+input[type="range"]{width:100%; accent-color:var(--accent); height:26px; margin:0}
+
+.readout{display:grid; grid-template-columns:minmax(190px,auto) 1fr; gap:16px; align-items:center;
+  padding:16px 18px; border-radius:12px; background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow)}
+.readout .value{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+  font-size:clamp(2.1rem,7vw,3.1rem); font-weight:500; line-height:1; letter-spacing:-.02em;
+  display:flex; align-items:baseline; gap:8px}
+.readout .unit{font-size:.34em; color:var(--ink-3); font-weight:400; letter-spacing:.04em}
+.terms{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.term{display:flex; flex-direction:column; gap:1px; padding:7px 11px; border-radius:8px;
+  background:var(--surface-2); border:1px solid var(--line)}
+.term .k{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.term .v{font-family:"IBM Plex Mono",monospace; font-size:14px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.term.is-nonio{background:var(--accent-soft); border-color:transparent}
+.term.is-nonio .v{color:var(--accent)}
+.term.is-lime .v{color:var(--lime-ink)}
+.op{font-family:"IBM Plex Mono",monospace; color:var(--ink-3); font-size:17px}
+
+.stage{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.stage-head{display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.stage-title{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:11.5px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3)}
+.scroller{overflow-x:auto; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch}
+.scroller svg{display:block; min-width:780px; width:100%; height:auto}
+.scroller svg.grab{touch-action:none; cursor:ew-resize}
+.scroller svg.zoom{min-width:620px}
+.hint{font-size:12.5px; color:var(--ink-2); padding:9px 14px; border-top:1px solid var(--line); background:var(--surface-2); margin:0}
+
+.pieces{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:10px}
+.piece{text-align:left; cursor:pointer; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--ink); display:flex; flex-direction:column; gap:3px}
+.piece:hover{border-color:var(--line-2)}
+.piece[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft)}
+.piece .pn{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:15px}
+.piece .pd{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.verdict{display:flex; gap:12px; align-items:flex-start; padding:13px 15px; border-radius:10px; border:1px solid transparent}
+.verdict .icon{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11.5px; padding:4px 8px;
+  border-radius:5px; white-space:nowrap; letter-spacing:.06em; color:#fff}
+.verdict p{font-size:13.5px}
+.v-ok{background:var(--good-soft); border-color:var(--good)} .v-ok .icon{background:var(--good)}
+.v-no{background:var(--bad-soft); border-color:var(--bad)} .v-no .icon{background:var(--bad)}
+.v-warn{background:var(--warn-soft); border-color:var(--warn)} .v-warn .icon{background:var(--warn)}
+
+.legend{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:2px}
+.legend li{margin:0}
+.legend button{width:100%; text-align:left; display:grid; grid-template-columns:26px 1fr; gap:10px;
+  align-items:start; background:transparent; border:0; border-radius:8px; padding:9px 10px; cursor:pointer;
+  color:var(--ink); font:inherit}
+.legend button:hover, .legend button[aria-pressed="true"]{background:var(--surface-2)}
+.legend button[aria-pressed="true"] .num{background:var(--accent); color:#fff; border-color:var(--accent)}
+.num{display:grid; place-items:center; width:24px; height:24px; border-radius:50%; border:1.5px solid var(--line-2);
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; color:var(--ink-2)}
+.legend .nm{font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:15px; display:block}
+.legend .ds{font-size:13px; color:var(--ink-2); display:block; line-height:1.45}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+th,td{padding:6px 10px; text-align:left; border-bottom:1px solid var(--line)}
+th{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:11px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:600; position:sticky; top:0; background:var(--surface)}
+td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+tr.hl td{background:var(--accent-soft); font-weight:600}
+
+.steps{counter-reset:s; list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px}
+.steps li{counter-increment:s; display:grid; grid-template-columns:28px 1fr; gap:12px; align-items:start}
+.steps li::before{content:counter(s); display:grid; place-items:center; width:28px; height:28px; border-radius:50%;
+  background:var(--ink); color:var(--surface); font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600}
+.formula{font-family:"IBM Plex Mono",monospace; font-size:14px; background:var(--surface-2);
+  border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:12px 15px; overflow-x:auto;
+  white-space:pre-line; line-height:1.75}
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(275px,1fr)); gap:16px}
+.grid4{display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr))}
+.grid4 > div{padding:13px 16px; border-top:1px solid var(--line)}
+.grid4 p{font-size:13.5px; color:var(--ink-2)}
+
+.pr-top{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; justify-content:space-between}
+.score{display:flex; gap:20px}
+.score div{display:flex; flex-direction:column}
+.score .k{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:10.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3)}
+.score .v{font-family:"IBM Plex Mono",monospace; font-size:22px; font-variant-numeric:tabular-nums; line-height:1.15}
+.answer{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.answer input[type="text"]{width:145px; padding:10px 13px; border-radius:9px; border:1.5px solid var(--line-2);
+  background:var(--surface); color:var(--ink); font-family:"IBM Plex Mono",monospace; font-size:19px;
+  font-variant-numeric:tabular-nums}
+.btn{border:0; cursor:pointer; border-radius:9px; padding:11px 18px; background:var(--accent); color:#fff;
+  font-family:"IBM Plex Sans Condensed",sans-serif; font-weight:600; font-size:15px; letter-spacing:.02em}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line-2)}
+.btn.ghost:hover{border-color:var(--accent); color:var(--accent); filter:none}
+.feedback{margin-top:12px; padding:13px 15px; border-radius:10px; font-size:14px; display:none}
+.feedback.show{display:block}
+.feedback.ok{background:var(--good-soft); border:1px solid var(--good)}
+.feedback.no{background:var(--bad-soft); border:1px solid var(--bad)}
+.feedback b{font-family:"IBM Plex Mono",monospace}
+
+footer{border-top:1px solid var(--line); padding-top:16px; font-size:12.5px; color:var(--ink-3);
+  display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between}
+
+@media (max-width:640px){
+  .readout{grid-template-columns:1fr; gap:12px}
+  .card-pad{padding:15px}
+  .wrap{padding:16px 12px 44px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Universidad UTE · Máquinas Herramientas · Quinto nivel</p>
+    <h1>Pie de rey<span class="sub">Instrumentos básicos de medición I — calibrador con nonio</span></h1>
+    <p class="lede">Arrastra el cursor sobre el instrumento. La <strong>lupa</strong> amplía la zona de lectura y marca en verde la única división del nonio que coincide con una de la regla: ahí está la fracción de milímetro.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" id="t-banco" aria-controls="p-banco" aria-selected="true">Banco de medición</button>
+    <button class="tab" role="tab" id="t-partes" aria-controls="p-partes" aria-selected="false">Partes</button>
+    <button class="tab" role="tab" id="t-nonio" aria-controls="p-nonio" aria-selected="false">Cómo se lee</button>
+    <button class="tab" role="tab" id="t-practica" aria-controls="p-practica" aria-selected="false">Práctica</button>
+  </div>
+
+  <!-- ============ BANCO ============ -->
+  <section class="panel" id="p-banco" role="tabpanel" aria-labelledby="t-banco">
+
+    <div class="controls">
+      <div>
+        <span class="ctl-label">Apreciación del nonio</span>
+        <div class="seg" id="modeSeg" role="group" aria-label="Apreciación del nonio">
+          <button type="button" data-mode="0.1" aria-pressed="false">0,1 mm · 10 div</button>
+          <button type="button" data-mode="0.05" aria-pressed="true">0,05 mm · 20 div</button>
+          <button type="button" data-mode="0.02" aria-pressed="false">0,02 mm · 50 div</button>
+        </div>
+      </div>
+      <div>
+        <span class="ctl-label">Ajuste</span>
+        <div class="stepper">
+          <button type="button" id="dec1" aria-label="Restar un milímetro">−1</button>
+          <button type="button" id="decP" aria-label="Restar una división">−</button>
+          <button type="button" id="incP" aria-label="Sumar una división">+</button>
+          <button type="button" id="inc1" aria-label="Sumar un milímetro">+1</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="value"><span id="bigValue">24,35</span><span class="unit">mm</span></div>
+      <div class="terms" id="terms"></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head">
+        <span class="stage-title">Calibrador 0–150 mm · vista frontal</span>
+        <span class="note" style="font-size:12px">Arrastra sobre el instrumento</span>
+      </div>
+      <div class="scroller"><svg id="calSvg" class="grab" viewBox="0 0 1120 300" role="img" aria-label="Pie de rey; arrastra para cambiar la apertura"></svg></div>
+      <div style="padding:10px 14px"><input type="range" id="slider" min="0" max="80" step="0.05" value="24.35" aria-label="Apertura del calibrador en milímetros"></div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head"><span class="stage-title">Lupa · zona de lectura</span></div>
+      <div class="scroller"><svg id="zoomSvg" class="grab zoom" viewBox="0 0 1000 220" role="img" aria-label="Ampliación de la regla y el nonio"></svg></div>
+      <p class="hint" id="zoomHint"></p>
+    </div>
+
+    <div class="card card-pad">
+      <h2>Piezas de taller</h2>
+      <p class="note" style="margin-bottom:12px">Cada pieza llega con su cota y su tolerancia de plano. El instrumento da un número; tú decides si la pieza se acepta —y si el pie de rey es el instrumento adecuado para esa tolerancia.</p>
+      <div class="pieces" id="pieces"></div>
+      <div id="verdict" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ============ PARTES ============ -->
+  <section class="panel" id="p-partes" role="tabpanel" aria-labelledby="t-partes" hidden>
+    <div class="stage">
+      <div class="stage-head"><span class="stage-title">Nomenclatura</span></div>
+      <div class="scroller"><svg id="anatSvg" viewBox="0 0 1120 310" role="img" aria-label="Partes del pie de rey numeradas"></svg></div>
+    </div>
+    <div class="card card-pad">
+      <h2>Ocho partes que debes saber nombrar</h2>
+      <p class="note" style="margin-bottom:10px">Toca un elemento de la lista para localizarlo en el instrumento.</p>
+      <ul class="legend" id="legend"></ul>
+    </div>
+    <div class="card">
+      <div class="card-pad">
+        <h2>Las cuatro medidas que resuelve</h2>
+        <p class="note">Un solo instrumento, cuatro geometrías. La lectura se toma siempre en la misma escala.</p>
+      </div>
+      <div class="grid4">
+        <div><h3>Exteriores</h3><p>Mordazas inferiores. Diámetros de ejes, espesores, anchos. Contacto con las caras planas, nunca con las puntas.</p></div>
+        <div><h3>Interiores</h3><p>Mordazas superiores u orejas. Agujeros y ranuras: se busca el valor <em>máximo</em> girando el instrumento dentro del agujero.</p></div>
+        <div><h3>Profundidades</h3><p>Varilla que sale por el extremo de la regla. El talón debe apoyar plano sobre la cara de referencia.</p></div>
+        <div><h3>Resaltes</h3><p>Con el talón del cursor y el extremo de la regla, en escalones y rebajes.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NONIO ============ -->
+  <section class="panel" id="p-nonio" role="tabpanel" aria-labelledby="t-nonio" hidden>
+    <div class="card card-pad">
+      <h2>El truco tiene casi 400 años</h2>
+      <p>En 1631 Pierre Vernier publicó una escala auxiliar deliberadamente <strong>más corta</strong> que la principal. En español el instrumento heredó además el nombre de <em>nonio</em>, por el portugués Pedro Nunes, y el apodo de taller <em>pie de rey</em>. La idea sigue siendo la misma: si una escala móvil de <em>n</em> divisiones ocupa exactamente <em>n−1</em> milímetros, cada división del nonio mide <em>1/n</em> de milímetro menos que un milímetro.</p>
+      <div class="formula" id="fNonio"></div>
+      <p class="note" style="margin-top:10px">Ese déficit se acumula: la división 1 va retrasada 1/n mm, la división 2 va retrasada 2/n mm… Por eso solo una división del nonio puede quedar alineada con una de la regla, y su número dice cuántas veces hay que sumar 1/n mm.</p>
+    </div>
+
+    <div class="cols">
+      <div class="card card-pad">
+        <h2>Regla de lectura</h2>
+        <ol class="steps">
+          <li><div><strong>Parte entera.</strong> Lee en la regla el último milímetro rebasado por el <span style="color:var(--accent); font-weight:600">cero del nonio</span>. No el más cercano: el último rebasado.</div></li>
+          <li><div><strong>Coincidencia.</strong> Recorre el nonio hasta hallar la única división alineada con una de la regla.</div></li>
+          <li><div><strong>Fracción.</strong> Multiplica el número de esa división por la apreciación.</div></li>
+          <li><div><strong>Suma.</strong> Lectura = parte entera + fracción, con las cifras decimales que permite el instrumento y ni una más.</div></li>
+        </ol>
+        <div class="formula" id="fEjemplo" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card card-pad">
+        <h2>Desfase acumulado</h2>
+        <p class="note">Posición de cada división del nonio respecto al cero, para la apreciación seleccionada. La fila marcada es la coincidencia actual del banco de medición.</p>
+        <div class="tbl-wrap" style="max-height:300px; overflow-y:auto; margin-top:10px">
+          <table id="tblNonio"><thead><tr><th>División</th><th>Posición</th><th>Retraso</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-pad">
+        <h2>Lo que la apreciación no te dice</h2>
+        <p class="note">0,02 mm es la resolución de la escala, no la incertidumbre de la medida. Estas seis fuentes deciden si tu lectura sirve para algo.</p>
+      </div>
+      <div class="grid4">
+        <div><h3>Error de cero</h3><p>Antes de medir, cierra las mordazas y comprueba que el cero del nonio coincida con el de la regla. Si no coincide, anota el desvío y corrígelo en cada lectura.</p></div>
+        <div><h3>Presión de contacto</h3><p>El pie de rey no tiene limitador de fuerza. Apretar deforma la pieza y flexa la mordaza: el error siempre va a la baja en exteriores.</p></div>
+        <div><h3>Paralaje</h3><p>Mira perpendicular al plano de las escalas. De costado, la coincidencia aparente se desplaza una o dos divisiones.</p></div>
+        <div><h3>Error de Abbe</h3><p>La escala no está alineada con la línea de medición. Mide con la pieza lo más cerca posible de la regla, nunca en la punta de las mordazas.</p></div>
+        <div><h3>Temperatura</h3><p>La temperatura de referencia normalizada es 20 °C (ISO 1). Acero, aluminio y la propia regla dilatan de forma distinta.</p></div>
+        <div><h3>Criterio 10:1</h3><p>La apreciación debería ser como máximo 1/10 de la tolerancia a verificar. Si la tolerancia baja de 0,2 mm, el pie de rey ya no alcanza: pasa al micrómetro.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRÁCTICA ============ -->
+  <section class="panel" id="p-practica" role="tabpanel" aria-labelledby="t-practica" hidden>
+    <div class="card card-pad">
+      <div class="pr-top">
+        <div><h2>Lee el instrumento</h2><p class="note" id="prMode"></p></div>
+        <div class="score">
+          <div><span class="k">Aciertos</span><span class="v" id="scHit">0</span></div>
+          <div><span class="k">Intentos</span><span class="v" id="scTry">0</span></div>
+          <div><span class="k">Racha</span><span class="v" id="scStreak">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-head"><span class="stage-title">Instrumento · lectura oculta</span></div>
+      <div class="scroller"><svg id="prCalSvg" viewBox="0 0 1120 300" role="img" aria-label="Pie de rey con una medida por leer"></svg></div>
+    </div>
+    <div class="stage">
+      <div class="stage-head"><span class="stage-title">Lupa</span></div>
+      <div class="scroller"><svg id="prZoomSvg" class="zoom" viewBox="0 0 1000 220" role="img" aria-label="Ampliación de la zona de lectura"></svg></div>
+    </div>
+
+    <div class="card card-pad">
+      <div class="answer">
+        <label for="prInput" class="ctl-label" style="margin:0 6px 0 0">Lectura en mm</label>
+        <input type="text" id="prInput" inputmode="decimal" placeholder="00,00" autocomplete="off">
+        <button type="button" class="btn" id="prCheck">Comprobar</button>
+        <button type="button" class="btn ghost" id="prNew">Otra medida</button>
+      </div>
+      <div class="feedback" id="prFeedback" role="status"></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Universidad UTE · Facultad de Ciencias de la Ingeniería e Industrias · Carrera de Electromecánica</span>
+    <span>Simulador de apoyo docente. No sustituye la calibración del instrumento real.</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Modelo ---------------- */
+  var MODES = {
+    "0.1":  {n:10, p:0.1,  dec:1, every:5},
+    "0.05": {n:20, p:0.05, dec:2, every:5},
+    "0.02": {n:50, p:0.02, dec:2, every:10}
+  };
+  var MAX = 80;
+  var X0 = 150, K = 6.5, BEAM_L = 140, BEAM_R = 1075, SCALE_Y = 152, BEAM_TOP = 110;
+  var ENG = "#141A24", ENG2 = "#5A6472", STEEL1 = "#EDF0F5", STEEL2 = "#CFD7E1",
+      STEEL3 = "#AEB8C6", STEEL4 = "#8C97A6", BLUE = "#0B34EE", LIME = "#A8F06B", LIMEI = "#2E7D12";
+
+  var state = {mode:"0.05", reading:24.35, piece:null};
+  var pr = {target:0, hits:0, tries:0, streak:0, answered:false};
+
+  function M(){ return MODES[state.mode]; }
+  function vlen(){ return M().n - 1; }
+  function vdiv(){ return (M().n - 1)/M().n; }
+  function quant(v){ var p = M().p; return Math.round(v/p)*p; }
+  function fmt(v, d){ if(d === undefined) d = M().dec; return v.toFixed(d).replace(".", ","); }
+  function parts(v){
+    var p = M().p, whole = Math.floor(v + 1e-9), k = Math.round((v - whole)/p);
+    if(k >= M().n){ whole += 1; k = 0; }
+    return {whole:whole, k:k, frac:k*p};
+  }
+
+  /* ---------------- Helpers SVG ---------------- */
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text){
+    var e = document.createElementNS(NS, tag);
+    for(var a in attrs){ if(attrs[a] !== null && attrs[a] !== undefined) e.setAttribute(a, attrs[a]); }
+    if(text !== undefined) e.textContent = text;
+    return e;
+  }
+  function line(x1,y1,x2,y2,stroke,w,dash){
+    return el("line", {x1:x1, y1:y1, x2:x2, y2:y2, stroke:stroke, "stroke-width":w, "stroke-dasharray":dash});
+  }
+  function txt(x,y,s,size,fill,anchor,weight,mono){
+    return el("text", {x:x, y:y, "font-size":size, fill:fill, "text-anchor":anchor || "middle",
+      "font-family": mono ? "'IBM Plex Mono', monospace" : "'IBM Plex Sans Condensed', sans-serif",
+      "font-weight":weight || 600}, s);
+  }
+
+  /* ---------------- Instrumento ---------------- */
+  function buildCaliper(svg, key, anatomy){
+    svg.textContent = "";
+    var gid = "stl-" + key;
+    var defs = el("defs");
+    var grad = el("linearGradient", {id:gid, x1:"0", y1:"0", x2:"0", y2:"1"});
+    grad.appendChild(el("stop", {offset:"0", "stop-color":STEEL1}));
+    grad.appendChild(el("stop", {offset:"0.55", "stop-color":STEEL2}));
+    grad.appendChild(el("stop", {offset:"1", "stop-color":STEEL3}));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+    var GR = "url(#" + gid + ")";
+    var ST = {fill:GR, stroke:STEEL4, "stroke-width":1.2, "stroke-linejoin":"round"};
+    function shape(tag, extra){
+      var a = {}; for(var q in ST) a[q] = ST[q]; for(var w in extra) a[w] = extra[w];
+      return el(tag, a);
+    }
+
+    var fixed = el("g");
+    // Mordaza fija para exteriores: cara de medición en X0
+    fixed.appendChild(shape("polygon", {points:
+      X0 + ",152 " + X0 + ",272 " + (X0-12) + ",272 " + (X0-26) + ",228 " + (X0-26) + "," + BEAM_TOP + " " + X0 + "," + BEAM_TOP}));
+    // Oreja fija para interiores: cara de medición (exterior) en X0
+    fixed.appendChild(shape("polygon", {points:
+      X0 + "," + BEAM_TOP + " " + (X0+20) + "," + BEAM_TOP + " " + (X0+3) + ",44 " + X0 + ",44"}));
+    // Regla graduada
+    fixed.appendChild(shape("rect", {x:BEAM_L, y:BEAM_TOP, width:BEAM_R-BEAM_L, height:SCALE_Y-BEAM_TOP, rx:2}));
+    // Varilla de profundidad en vista interrumpida
+    fixed.appendChild(el("rect", {x:BEAM_R, y:126, width:36, height:9, fill:STEEL2, stroke:STEEL4, "stroke-width":1}));
+    fixed.appendChild(line(BEAM_R+24, 121, BEAM_R+15, 140, STEEL4, 1.4));
+    fixed.appendChild(line(BEAM_R+31, 121, BEAM_R+22, 140, STEEL4, 1.4));
+
+    for(var i = 0; i <= 143; i++){
+      var x = X0 + i*K;
+      if(x > BEAM_R - 8) break;
+      var big = (i % 10 === 0), mid = (i % 5 === 0);
+      fixed.appendChild(line(x, SCALE_Y, x, SCALE_Y - (big ? 19 : mid ? 12 : 7), ENG, big ? 1.3 : mid ? 1.05 : 0.85));
+      if(big) fixed.appendChild(txt(x, SCALE_Y - 23, String(i), 11.5, ENG));
+    }
+    svg.appendChild(fixed);
+
+    svg.appendChild(el("g", {"class":"workG"}));
+
+    // Cursor: un único grupo que solo se traslada
+    var cur = el("g", {"class":"curG"});
+    var L = vlen()*K, W = L + 48;
+    cur.appendChild(shape("rect", {x:0, y:SCALE_Y, width:W, height:56, rx:4}));
+    cur.appendChild(shape("polygon", {points:"0,208 24,208 24,230 12,272 0,272"}));
+    cur.appendChild(shape("polygon", {points:"0," + BEAM_TOP + " -20," + BEAM_TOP + " -3,44 0,44"}));
+    cur.appendChild(el("rect", {x:W-42, y:BEAM_TOP-17, width:32, height:17, rx:3, fill:STEEL2, stroke:STEEL4, "stroke-width":1}));
+    cur.appendChild(el("circle", {cx:W-26, cy:BEAM_TOP-8.5, r:5, fill:STEEL4}));
+    cur.appendChild(el("rect", {x:W-36, y:SCALE_Y+56, width:28, height:16, rx:3, fill:STEEL3, stroke:STEEL4, "stroke-width":1}));
+    for(var r = 0; r < 5; r++) cur.appendChild(line(W-32+r*5, SCALE_Y+58, W-32+r*5, SCALE_Y+70, STEEL4, 1));
+
+    var n = M().n, every = M().every;
+    for(var j = 0; j <= n; j++){
+      var xv = j*vdiv()*K, bigv = (j % every === 0);
+      cur.appendChild(line(xv, SCALE_Y, xv, SCALE_Y + (bigv ? 19 : 10), ENG, bigv ? 1.3 : 0.85));
+      if(bigv) cur.appendChild(txt(xv, SCALE_Y + 32, String(j), 10.5, ENG));
+    }
+    cur.appendChild(txt(L + 26, SCALE_Y + 32, "1/" + n, 10.5, ENG2, "middle", 500));
+    svg.appendChild(cur);
+
+    if(anatomy) svg.appendChild(buildCallouts());
+    return cur;
+  }
+
+  var PARTS = [
+    {n:1, name:"Mordazas para exteriores", d:"Caras planas rectificadas. Diámetros de ejes, espesores y anchos.", x:252, y:252},
+    {n:2, name:"Mordazas para interiores", d:"Orejas de filo. Diámetros de agujeros y anchos de ranura.", x:252, y:70},
+    {n:3, name:"Regla graduada", d:"Escala principal en milímetros; es el cuerpo del instrumento.", x:720, y:138},
+    {n:4, name:"Nonio o vernier", d:"Escala móvil que fracciona el milímetro; su longitud define la apreciación.", x:0, y:190, dx:55},
+    {n:5, name:"Cursor o corredera", d:"Bloque que desliza sobre la regla y arrastra las mordazas móviles.", x:0, y:196, dx:120},
+    {n:6, name:"Tornillo de fijación", d:"Bloquea el cursor para retirar el instrumento sin perder la lectura.", x:0, y:100, dx:172},
+    {n:7, name:"Pulsador de arrastre", d:"Permite aproximar el cursor con el pulgar sin forzar el contacto.", x:0, y:224, dx:185},
+    {n:8, name:"Varilla de profundidad", d:"Sale por el extremo de la regla; mide agujeros ciegos y ranuras.", x:1093, y:160}
+  ];
+  var ANAT_READING = 30;
+
+  function buildCallouts(){
+    var g = el("g"), XA = X0 + ANAT_READING*K;
+    PARTS.forEach(function(p){
+      var cx = p.dx ? XA + p.dx : p.x, cy = p.y, up = cy < 150, ly = up ? 20 : 288;
+      var gg = el("g", {"class":"co", "data-part":p.n});
+      gg.appendChild(line(cx, cy, cx, up ? ly + 11 : ly - 11, ENG2, 1, "3 3"));
+      gg.appendChild(el("circle", {cx:cx, cy:ly, r:9.5, fill:"#FFFFFF", stroke:ENG, "stroke-width":1.4}));
+      gg.appendChild(txt(cx, ly + 3.8, String(p.n), 11, ENG, "middle", 600, true));
+      g.appendChild(gg);
+    });
+    return g;
+  }
+
+  /* ---------------- Pieza medida ---------------- */
+  var PIECES = [
+    {id:"p1", name:"Pasador cilíndrico", spec:"Ø12,00 ± 0,25 mm", lo:11.75, hi:12.25, real:11.95, tol:0.50, type:"ext"},
+    {id:"p2", name:"Alojamiento", spec:"Ø20,00 +0,50 / 0 mm", lo:20.00, hi:20.50, real:20.35, tol:0.50, type:"int"},
+    {id:"p3", name:"Espesor de placa", spec:"6,00 ± 0,25 mm", lo:5.75, hi:6.25, real:6.40, tol:0.50, type:"ext"},
+    {id:"p4", name:"Eje Ø24 h9", spec:"24,000 / 23,948 mm · IT9 = 52 µm", lo:23.948, hi:24.000, real:23.97, tol:0.052, type:"ext"}
+  ];
+
+  function drawWork(svg){
+    var g = svg.querySelector(".workG");
+    if(!g) return;
+    g.textContent = "";
+    var pc = state.piece;
+    if(!pc) return;
+    var X = X0 + state.reading*K, w = X - X0;
+    if(w < 5) return;
+    if(pc.type === "ext"){
+      g.appendChild(el("rect", {x:X0, y:214, width:w, height:52, rx:3, fill:"#AFBBCA", stroke:"#65707E", "stroke-width":1.2}));
+      g.appendChild(line(X0, 240, X, 240, "#65707E", 0.9, "9 3 2 3"));
+    } else {
+      g.appendChild(el("rect", {x:X0-95, y:46, width:w+190, height:58, rx:3, fill:"#AFBBCA", stroke:"#65707E", "stroke-width":1.2}));
+      g.appendChild(el("rect", {x:X0, y:46, width:w, height:58, fill:STEEL1, stroke:"#65707E", "stroke-width":1.2}));
+    }
+  }
+
+  /* ---------------- Lupa ---------------- */
+  function drawZoom(svg, reading, reveal){
+    svg.textContent = "";
+    var S = 960/(vlen() + 1.5), x0 = 30, BASE = 108;
+    var p = parts(reading), n = M().n;
+
+    svg.appendChild(el("rect", {x:0, y:0, width:1000, height:220, fill:STEEL1}));
+    svg.appendChild(el("rect", {x:0, y:BASE-1.5, width:1000, height:3, fill:STEEL3}));
+
+    if(reveal){
+      var xc = x0 + p.k*vdiv()*S;
+      svg.appendChild(el("rect", {x:xc-7, y:34, width:14, height:152, fill:LIME, opacity:"0.6", rx:3}));
+      svg.appendChild(line(xc, 34, xc, 186, LIMEI, 2.4));
+    }
+
+    var gm = el("g", {transform:"translate(" + (-reading*S) + ",0)"});
+    for(var i = 0; i <= 150; i++){
+      var pos = x0 + (i - reading)*S;
+      if(pos < -50 || pos > 1050) continue;
+      var x = x0 + i*S, big = (i % 10 === 0), mid = (i % 5 === 0);
+      gm.appendChild(line(x, BASE-3, x, BASE-3-(big ? 38 : mid ? 28 : 18), ENG, big ? 1.9 : mid ? 1.4 : 1.1));
+      if((big || mid || (reveal && i === p.whole)) && pos < 972) gm.appendChild(txt(x, BASE-50, String(i), 15, (reveal && i === p.whole) ? BLUE : ENG, "middle", (i === p.whole) ? 700 : 600));
+    }
+    svg.appendChild(gm);
+
+    var gv = el("g");
+    for(var j = 0; j <= n; j++){
+      var xv = x0 + j*vdiv()*S, bigv = (j % M().every === 0), isC = (reveal && j === p.k);
+      gv.appendChild(line(xv, BASE+3, xv, BASE+3+(bigv ? 38 : 24), isC ? LIMEI : ENG, isC ? 2.4 : (bigv ? 1.9 : 1.1)));
+      if(bigv || isC) gv.appendChild(txt(xv, BASE+62, String(j), 15, isC ? LIMEI : ENG, "middle", isC ? 700 : 600));
+    }
+    gv.appendChild(el("rect", {x:x0-1.1, y:28, width:2.2, height:BASE-31, fill:BLUE, opacity:"0.35"}));
+    gv.appendChild(el("polygon", {points:(x0-6) + "," + (BASE+76) + " " + (x0+6) + "," + (BASE+76) + " " + x0 + "," + (BASE+64), fill:BLUE}));
+    gv.appendChild(txt(x0 + 12, BASE+92, "CERO DEL NONIO", 11.5, BLUE, "start", 600));
+    svg.appendChild(gv);
+
+    if(reveal){
+      svg.appendChild(txt(x0 + 4, 22, "PARTE ENTERA = " + p.whole + " mm", 13, BLUE, "start", 700));
+      svg.appendChild(txt(972, 22, "DIVISIÓN " + p.k + " × " + fmt(M().p) + " = " + fmt(p.frac) + " mm", 13, LIMEI, "end", 700));
+    } else {
+      svg.appendChild(txt(x0 + 4, 22, "¿QUÉ DIVISIÓN DEL NONIO COINCIDE?", 13, ENG2, "start", 700));
+    }
+  }
+
+  /* ---------------- Render ---------------- */
+  var calSvg = document.getElementById("calSvg"),
+      zoomSvg = document.getElementById("zoomSvg"),
+      anatSvg = document.getElementById("anatSvg"),
+      prCalSvg = document.getElementById("prCalSvg"),
+      prZoomSvg = document.getElementById("prZoomSvg"),
+      slider = document.getElementById("slider"),
+      curG = null, prCurG = null;
+
+  function moveCursor(g, reading){ if(g) g.setAttribute("transform", "translate(" + (X0 + reading*K) + ",0)"); }
+
+  function rebuild(){
+    curG = buildCaliper(calSvg, "cal", false);
+    prCurG = buildCaliper(prCalSvg, "prc", false);
+    var anatCur = buildCaliper(anatSvg, "anat", true);
+    moveCursor(anatCur, ANAT_READING);
+    slider.step = M().p;
+    slider.max = MAX;
+    render();
+  }
+
+  function render(){
+    var v = state.reading, p = parts(v);
+    moveCursor(curG, v);
+    drawWork(calSvg);
+    drawZoom(zoomSvg, v, true);
+    document.getElementById("bigValue").textContent = fmt(v);
+    slider.value = v;
+
+    var t = document.getElementById("terms");
+    t.textContent = "";
+    t.appendChild(term("Parte entera", p.whole + " mm", ""));
+    t.appendChild(op("+"));
+    t.appendChild(term("División", "n.º " + p.k, "is-nonio"));
+    t.appendChild(op("×"));
+    t.appendChild(term("Apreciación", fmt(M().p) + " mm", ""));
+    t.appendChild(op("="));
+    t.appendChild(term("Fracción", fmt(p.frac) + " mm", "is-lime"));
+
+    document.getElementById("zoomHint").textContent =
+      "El cero del nonio ha rebasado la división de " + p.whole + " mm. La división " + p.k +
+      " del nonio coincide con una de la regla: " + p.k + " × " + fmt(M().p) + " mm = " + fmt(p.frac) +
+      " mm. Lectura = " + p.whole + " mm + " + fmt(p.frac) + " mm = " + fmt(v) + " mm.";
+
+    renderNonio(p);
+    renderVerdict();
+  }
+
+  function term(k, v, cls){
+    var d = document.createElement("div");
+    d.className = "term " + cls;
+    var a = document.createElement("span"); a.className = "k"; a.textContent = k;
+    var b = document.createElement("span"); b.className = "v"; b.textContent = v;
+    d.appendChild(a); d.appendChild(b);
+    return d;
+  }
+  function op(s){ var e = document.createElement("span"); e.className = "op"; e.textContent = s; return e; }
+
+  function renderNonio(p){
+    var n = M().n;
+    document.getElementById("fNonio").textContent =
+      "n = " + n + " divisiones del nonio ocupan " + (n-1) + " mm de la regla\n" +
+      "1 división del nonio = " + (n-1) + "/" + n + " mm = " + vdiv().toFixed(3).replace(".", ",") + " mm\n" +
+      "Apreciación  A = 1 mm / n = " + fmt(M().p) + " mm";
+    document.getElementById("fEjemplo").textContent =
+      "Lectura actual = " + p.whole + " mm + ( " + p.k + " × " + fmt(M().p) + " mm ) = " + fmt(state.reading) + " mm";
+
+    var tb = document.querySelector("#tblNonio tbody");
+    tb.textContent = "";
+    for(var j = 0; j <= n; j++){
+      var tr = document.createElement("tr");
+      if(j === p.k) tr.className = "hl";
+      [String(j), (j*vdiv()).toFixed(3).replace(".", ",") + " mm",
+       (j === 0 ? "—" : "−" + (j*M().p).toFixed(2).replace(".", ",") + " mm")].forEach(function(s){
+        var td = document.createElement("td"); td.className = "n"; td.textContent = s; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    }
+  }
+
+  function renderVerdict(){
+    var box = document.getElementById("verdict");
+    box.textContent = "";
+    var pc = state.piece;
+    if(!pc) return;
+    var v = state.reading, ratio = pc.tol/M().p, cls, icon, msg;
+    if(ratio < 10){
+      cls = "v-warn"; icon = "INSTRUMENTO INSUFICIENTE";
+      msg = "La tolerancia de la pieza es " + Math.round(pc.tol*1000) + " µm y la apreciación del nonio es " +
+        Math.round(M().p*1000) + " µm: la relación resulta " + ratio.toFixed(1) +
+        ":1, por debajo del criterio 10:1. Con este pie de rey no puedes decidir si la pieza cumple; verifica la cota con micrómetro.";
+    } else if(v >= pc.lo - 1e-9 && v <= pc.hi + 1e-9){
+      cls = "v-ok"; icon = "CONFORME";
+      msg = "La lectura " + fmt(v) + " mm cae dentro del intervalo " + fmt(pc.lo, 2) + " – " + fmt(pc.hi, 2) +
+        " mm. Relación tolerancia/apreciación = " + Math.round(ratio) + ":1, adecuada para esta verificación.";
+    } else {
+      cls = "v-no"; icon = "NO CONFORME";
+      msg = "La lectura " + fmt(v) + " mm queda fuera del intervalo " + fmt(pc.lo, 2) + " – " + fmt(pc.hi, 2) +
+        " mm. Desviación respecto al límite más próximo: " +
+        fmt(Math.min(Math.abs(v - pc.lo), Math.abs(v - pc.hi)), 2) + " mm.";
+    }
+    var d = document.createElement("div");
+    d.className = "verdict " + cls;
+    var s = document.createElement("span"); s.className = "icon"; s.textContent = icon;
+    var q = document.createElement("p"); q.textContent = msg;
+    d.appendChild(s); d.appendChild(q);
+    box.appendChild(d);
+  }
+
+  /* ---------------- Piezas ---------------- */
+  var piecesBox = document.getElementById("pieces");
+  PIECES.forEach(function(pc){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "piece"; b.setAttribute("aria-pressed", "false");
+    var a = document.createElement("span"); a.className = "pn"; a.textContent = pc.name;
+    var c = document.createElement("span"); c.className = "pd"; c.textContent = pc.spec;
+    b.appendChild(a); b.appendChild(c);
+    b.addEventListener("click", function(){
+      var same = state.piece && state.piece.id === pc.id;
+      state.piece = same ? null : pc;
+      Array.prototype.forEach.call(piecesBox.children, function(ch, idx){
+        ch.setAttribute("aria-pressed", (!same && PIECES[idx].id === pc.id) ? "true" : "false");
+      });
+      if(same) render(); else setReading(pc.real);
+    });
+    piecesBox.appendChild(b);
+  });
+
+  /* ---------------- Leyenda ---------------- */
+  var legend = document.getElementById("legend");
+  PARTS.forEach(function(p){
+    var li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.setAttribute("aria-pressed", "false");
+    var num = document.createElement("span"); num.className = "num"; num.textContent = p.n;
+    var box = document.createElement("span");
+    var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = p.name;
+    var ds = document.createElement("span"); ds.className = "ds"; ds.textContent = p.d;
+    box.appendChild(nm); box.appendChild(ds);
+    b.appendChild(num); b.appendChild(box);
+    b.addEventListener("click", function(){
+      var on = b.getAttribute("aria-pressed") === "true";
+      Array.prototype.forEach.call(legend.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", on ? "false" : "true");
+      Array.prototype.forEach.call(anatSvg.querySelectorAll(".co"), function(g){
+        var hit = !on && g.getAttribute("data-part") === String(p.n);
+        g.querySelector("circle").setAttribute("fill", hit ? BLUE : "#FFFFFF");
+        g.querySelector("circle").setAttribute("stroke", hit ? BLUE : ENG);
+        g.querySelector("circle").setAttribute("r", hit ? 12 : 9.5);
+        g.querySelector("text").setAttribute("fill", hit ? "#FFFFFF" : ENG);
+        g.querySelector("line").setAttribute("stroke", hit ? BLUE : ENG2);
+        g.querySelector("line").setAttribute("stroke-width", hit ? 1.8 : 1);
+      });
+    });
+    li.appendChild(b); legend.appendChild(li);
+  });
+
+  /* ---------------- Interacción ---------------- */
+  function setReading(v){
+    state.reading = Math.min(MAX, Math.max(0, quant(v)));
+    render();
+  }
+  function dragCaliper(svg){
+    var on = false;
+    function pos(e){
+      var r = svg.getBoundingClientRect();
+      return ((e.clientX - r.left)/r.width*1120 - X0)/K;
+    }
+    svg.addEventListener("pointerdown", function(e){ on = true; svg.setPointerCapture(e.pointerId); setReading(pos(e)); e.preventDefault(); });
+    svg.addEventListener("pointermove", function(e){ if(on) setReading(pos(e)); });
+    svg.addEventListener("pointerup", function(){ on = false; });
+    svg.addEventListener("pointercancel", function(){ on = false; });
+  }
+  function dragZoom(svg){
+    var on = false, sx = 0, sr = 0;
+    svg.addEventListener("pointerdown", function(e){ on = true; svg.setPointerCapture(e.pointerId); sx = e.clientX; sr = state.reading; e.preventDefault(); });
+    svg.addEventListener("pointermove", function(e){
+      if(!on) return;
+      var r = svg.getBoundingClientRect();
+      setReading(sr + (e.clientX - sx)/r.width*(vlen() + 1.5));
+    });
+    svg.addEventListener("pointerup", function(){ on = false; });
+    svg.addEventListener("pointercancel", function(){ on = false; });
+  }
+  dragCaliper(calSvg);
+  dragZoom(zoomSvg);
+
+  slider.addEventListener("input", function(e){ setReading(parseFloat(e.target.value)); });
+  document.getElementById("incP").addEventListener("click", function(){ setReading(state.reading + M().p); });
+  document.getElementById("decP").addEventListener("click", function(){ setReading(state.reading - M().p); });
+  document.getElementById("inc1").addEventListener("click", function(){ setReading(state.reading + 1); });
+  document.getElementById("dec1").addEventListener("click", function(){ setReading(state.reading - 1); });
+
+  document.getElementById("modeSeg").addEventListener("click", function(e){
+    var b = e.target.closest("button");
+    if(!b) return;
+    state.mode = b.getAttribute("data-mode");
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x === b ? "true" : "false");
+    });
+    state.reading = quant(state.reading);
+    rebuild();
+    newChallenge();
+  });
+
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){
+      tabs.forEach(function(x){
+        var on = (x === t);
+        x.setAttribute("aria-selected", on ? "true" : "false");
+        document.getElementById(x.getAttribute("aria-controls")).hidden = !on;
+      });
+    });
+  });
+
+  /* ---------------- Práctica ---------------- */
+  function newChallenge(){
+    var p = M().p, lo = 4, hi = MAX - 6;
+    var steps = Math.round((hi - lo)/p);
+    var v = quant(lo + Math.floor(Math.random()*steps)*p);
+    if(Math.abs(v - Math.round(v)) < 1e-9 && Math.random() < 0.85){
+      v = quant(v + p*(1 + Math.floor(Math.random()*(M().n - 2))));
+    }
+    pr.target = Math.min(hi, v);
+    pr.answered = false;
+    moveCursor(prCurG, pr.target);
+    drawZoom(prZoomSvg, pr.target, false);
+    document.getElementById("prFeedback").className = "feedback";
+    document.getElementById("prInput").value = "";
+    document.getElementById("prMode").textContent =
+      "Nonio de " + M().n + " divisiones, apreciación " + fmt(M().p) + " mm. Expresa la lectura con " +
+      M().dec + (M().dec === 1 ? " decimal." : " decimales.");
+  }
+
+  function checkAnswer(){
+    var fb = document.getElementById("prFeedback");
+    if(pr.answered){ newChallenge(); return; }
+    var v = parseFloat(document.getElementById("prInput").value.trim().replace(",", "."));
+    if(isNaN(v)){
+      fb.className = "feedback show no";
+      fb.textContent = "Escribe un número, por ejemplo 24,35.";
+      return;
+    }
+    pr.answered = true;
+    pr.tries++;
+    var p = parts(pr.target), ok = Math.abs(v - pr.target) < M().p/2;
+    if(ok){ pr.hits++; pr.streak++; } else { pr.streak = 0; }
+    fb.className = "feedback show " + (ok ? "ok" : "no");
+    fb.innerHTML = (ok ? "<b>Correcto.</b> " : "<b>No es correcto.</b> La lectura es <b>" + fmt(pr.target) + " mm</b>. ") +
+      "Parte entera <b>" + p.whole + " mm</b>; coincide la división <b>" + p.k + "</b>; fracción <b>" +
+      p.k + " × " + fmt(M().p) + " = " + fmt(p.frac) + " mm</b>." +
+      (ok ? " Pulsa «Otra medida» para seguir." : " Mira la lupa: la línea verde marca la coincidencia.");
+    drawZoom(prZoomSvg, pr.target, true);
+    document.getElementById("scHit").textContent = pr.hits;
+    document.getElementById("scTry").textContent = pr.tries;
+    document.getElementById("scStreak").textContent = pr.streak;
+  }
+
+  document.getElementById("prCheck").addEventListener("click", checkAnswer);
+  document.getElementById("prNew").addEventListener("click", newChallenge);
+  document.getElementById("prInput").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); checkAnswer(); }
+  });
+
+  rebuild();
+  newChallenge();
+})();
+</script>
+
+</body>
+</html>
